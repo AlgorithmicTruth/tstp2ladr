@@ -1,0 +1,4 @@
+*.o
+*.old
+tstp2ladr
+tstp2ladr_dbg
