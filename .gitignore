@@ -2,3 +2,8 @@
 *.old
 tstp2ladr
 tstp2ladr_dbg
+
+# local-only files (not part of the published project)
+commands.txt
+test_hints_pipeline.sh
+test_hints_pipeline2.sh
