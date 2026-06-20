@@ -33,6 +33,8 @@
 #include "ladr/tptp_trans.h"
 #include "ladr/tptp_parse.h"
 
+#include "ladr/attrib.h"
+
 #include "fix_positions.h"
 
 #include <string.h>
@@ -40,6 +42,26 @@
 
 #define PROGRAM_NAME "tstp2ladr"
 #define VERSION "1.0"
+
+/* The TPTP parser tags every formula/clause with a "tptp_name" attribute
+   (the original TPTP formula name) for its own bookkeeping.  Prover9 does
+   not register that attribute, so emitting it in the generated input file
+   makes Prover9 abort with "term_to_attributes, attribute name not found".
+   Strip it from a Topform's attributes before output. */
+static
+void strip_tptp_name_topform(Topform c)
+{
+  if (c != NULL)
+    c->attributes = delete_attributes(c->attributes, get_tptp_name_attr());
+}
+
+/* Same, for a Formula (problem-file assumptions/goals are Formulas). */
+static
+void strip_tptp_name_formula(Formula f)
+{
+  if (f != NULL)
+    f->attributes = delete_attributes(f->attributes, get_tptp_name_attr());
+}
 
 enum { MODE_LADR, MODE_HINTS };
 
@@ -218,6 +240,15 @@ int main(int argc, char **argv)
     fprintf(stderr, "%s: WARNING: %d step(s) have placeholder positions\n",
             PROGRAM_NAME, unfixed);
 
+  /* Strip the internal tptp_name attribute from every proof clause so it
+     never reaches the generated Prover9 input (Prover9 doesn't register
+     tptp_name and aborts on it). */
+  {
+    Plist q;
+    for (q = proof; q; q = q->next)
+      strip_tptp_name_topform((Topform) q->v);
+  }
+
   /* Output */
   if (mode == MODE_LADR) {
     Plist p;
@@ -256,6 +287,17 @@ int main(int argc, char **argv)
               plist_count(tptp->assumptions),
               plist_count(tptp->goals),
               problem_filename);
+
+      /* Strip the internal tptp_name attribute from problem formulas
+         (CNF problems parse to clauses that carry it; fwrite_formula_list
+         would emit '# tptp_name(...)' which Prover9 cannot parse). */
+      {
+        Plist q;
+        for (q = tptp->assumptions; q; q = q->next)
+          strip_tptp_name_formula((Formula) q->v);
+        for (q = tptp->goals; q; q = q->next)
+          strip_tptp_name_formula((Formula) q->v);
+      }
 
       /* Switch to LADR standard parse types for output
          (FOF formulas need 'all'/'exists' not '!'/'?') */
