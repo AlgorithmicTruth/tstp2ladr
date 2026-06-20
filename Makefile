@@ -6,7 +6,11 @@
 # Links against LADR-2026 libladr.a.
 
 CC = gcc
-LADR = /Users/jpm/LADR-2026
+
+# Path to your LADR-2026 (Prover9/Mace4) tree, built with libladr.a.
+# Default assumes LADR-2026 sits beside this repo; override as needed:
+#   make LADR=/path/to/LADR-2026
+LADR = ../LADR-2026
 
 # Detect OS and set platform-specific flags
 UNAME_S := $(shell uname -s)
